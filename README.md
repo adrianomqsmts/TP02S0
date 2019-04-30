@@ -1,1 +1,1 @@
-# Trabalho Prático 02 - Sistemas Operacinais.
+# Trabalho Prático 02 - Sistemas Operacionais.
