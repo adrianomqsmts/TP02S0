@@ -11,17 +11,18 @@
 #include "Process.h"
 
 #define MAXTAM 100
+#define BUFFER 256
 
-typedef struct TIME {
+typedef struct Time {
     int time; // Inicializar com 0
-} TIME;
+} Time;
 
-typedef struct CPU {
+typedef struct Cpu { // Rever os atributos
     int tempoCpu;
     int contadorAtual;
     int n;
     int tempoAtual;
-} CPU;
+} Cpu;
 
 typedef struct Processo{
     pid_t pid;
@@ -29,29 +30,39 @@ typedef struct Processo{
     EstadoProcesso estadoProcesso;
     int prioridade;
     char estado[15];
-    TIME time;
-    CPU cpu;
+    Time time;
+    Cpu cpu;
 } Processo;
 
-typedef struct PC_TABLE {
+typedef struct PcbTable {
     Processo vetor[MAXTAM];
     int Primeiro, Ultimo;
-} PC_TABLE;
+} PcbTable;
 
-typedef struct READY_STATE {
+typedef struct ReadyState {
     Processo vetor[MAXTAM];
     int Frente, Tras;
-} READY_STATE;
+} ReadyState;
 
-typedef struct BLOCKED_STATE {
+typedef struct BlockedState {
     Processo vetor[MAXTAM];
     int Frente, Tras;
-} BLOCKED_STATE;
+} BlockedState;
 
-typedef struct RUNNING_STATE {
-    Processo vetor[MAXTAM]; // Realmente precisa de um vetor?
-    int Frente, Tras;
-} RUNNING_STATE;
+typedef struct RunningState {
+    int iPcbTable;
+} RunningState;
 
+RunningState runningState;
+ReadyState readyState;
+BlockedState blockedState;
+PcbTable pcbTable;
+Cpu cpu;
+Time timee;
+
+void FFVaziaReady();
+void FFVaziaBlocked();
+void FLVazia();
+void inicializarEstruturas();
 
 #endif //TP02SO_PROCESSMANAGER_H

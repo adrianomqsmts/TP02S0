@@ -8,7 +8,13 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#include "Process.h"
+
 #define BUFFER 256
+
+typedef struct TipoPrograma {
+    TipoInstrucao vetor[100];
+} TipoPrograma;
 
 int runProcessCommander();
 

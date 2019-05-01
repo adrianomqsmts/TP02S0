@@ -1,69 +1,76 @@
-/*
 #include "ProcessManager.h"
 
-void runProcessManager(){
-
+void inicializarEstruturas() {
+    runningState.iPcbTable = -1;
+    FFVaziaReady(readyState);
+    FFVaziaBlocked(blockedState);
+    FLVazia(pcbTable);
+    cpu.contadorAtual = 0;
+    cpu.n = 0;
+    cpu.tempoAtual = 0;
+    cpu.tempoCpu = 0;
+    timee.time = 0;
 }
 
 // Implementação Fila Arranjo
 
-void FFVaziaReady(READY_STATE *readyState) {
-    readyState->Frente = 1;
-    readyState->Tras = readyState->Frente;
+void FFVaziaReady() {
+    readyState.Frente = 1;
+    readyState.Tras = readyState.Frente;
 }
 
-void FFVaziaBlocked(BLOCKED_STATE *blockedState) {
-    blockedState->Frente = 1;
-    blockedState->Tras = blockedState->Frente;
+void FFVaziaBlocked() {
+    blockedState.Frente = 1;
+    blockedState.Tras = blockedState.Frente;
 }
 
-int VaziaReady(READY_STATE readyState) { return (readyState.Frente == readyState.Tras); }
+int VaziaReady() { return (readyState.Frente == readyState.Tras); }
 
-int VaziaBlocked(BLOCKED_STATE blockedState) { return (blockedState.Frente == blockedState.Tras); }
+int VaziaBlocked() { return (blockedState.Frente == blockedState.Tras); }
 
-void EnfileiraReady(TipoItem x, READY_STATE *readyState) {
-    if (readyState->Tras % MAXTAM + 1 == readyState->Frente)
+void EnfileiraReady(Processo processo) {
+    if (readyState.Tras % MAXTAM + 1 == readyState.Frente)
         printf(" Erro fila esta cheia\n");
     else {
-        readyState->vetor[readyState->Tras - 1] = x;
-        readyState->Tras = readyState->Tras % MAXTAM + 1;
+        readyState.vetor[readyState.Tras - 1] = processo;
+        readyState.Tras = readyState.Tras % MAXTAM + 1;
     }
 }
 
-void EnfileiraBlocked(TipoItem x, BLOCKED_STATE *blockedState) {
-    if (blockedState->Tras % MAXTAM + 1 == blockedState->Frente)
+void EnfileiraBlocked(Processo processo) {
+    if (blockedState.Tras % MAXTAM + 1 == blockedState.Frente)
         printf(" Erro   fila est  a  cheia\n");
     else {
-        blockedState->vetor[blockedState->Tras - 1] = x;
-        blockedState->Tras = blockedState->Tras % MAXTAM + 1;
+        blockedState.vetor[blockedState.Tras - 1] = processo;
+        blockedState.Tras = blockedState.Tras % MAXTAM + 1;
     }
 }
 
-void DesenfileiraReady(READY_STATE *readyState, TipoItem *Item) {
-    if (VaziaReady(*readyState))
+void DesenfileiraReady(Processo *processo) {
+    if (VaziaReady())
         printf("Erro fila esta vazia\n");
     else {
-        *Item = readyState->vetor[readyState->Frente - 1];
-        readyState->Frente = readyState->Frente % MAXTAM + 1;
+        *processo = readyState.vetor[readyState.Frente - 1];
+        readyState.Frente = readyState.Frente % MAXTAM + 1;
     }
 }
 
-void DesenfileiraBlocked(BLOCKED_STATE *blockedState, TipoItem *Item) {
-    if (VaziaBlocked(*blockedState))
+void DesenfileiraBlocked(Processo *processo) {
+    if (VaziaBlocked())
         printf("Erro fila esta vazia\n");
     else {
-        *Item = blockedState->vetor[blockedState->Frente - 1];
-        blockedState->Frente = blockedState->Frente % MAXTAM + 1;
+        *processo = blockedState.vetor[blockedState.Frente - 1];
+        blockedState.Frente = blockedState.Frente % MAXTAM + 1;
     }
 }
 
-void ImprimeReady(READY_STATE readyState) {
+void ImprimeReady() {
     int Aux;
     for (Aux = readyState.Frente - 1; Aux <= (readyState.Tras - 2); Aux++)
         printf("%12d\n", readyState.vetor[Aux]);
 }
 
-void ImprimeBlocked(BLOCKED_STATE blockedState) {
+void ImprimeBlocked() {
     int Aux;
     for (Aux = blockedState.Frente - 1; Aux <= (blockedState.Tras - 2); Aux++)
         printf("%12d\n", blockedState.vetor[Aux]);
@@ -71,44 +78,40 @@ void ImprimeBlocked(BLOCKED_STATE blockedState) {
 
 // Implementação Lista Arranjo
 
-void FLVazia(PC_TABLE *pcTable) {
-    pcTable->Primeiro = 0;
-    pcTable->Ultimo = pcTable->Primeiro;
+void FLVazia() {
+    pcbTable.Primeiro = 0;
+    pcbTable.Ultimo = pcbTable.Primeiro;
 }
 
 
-int Vazia(PC_TABLE pcTable) {
-    return (pcTable.Primeiro == pcTable.Ultimo);
+int Vazia() {
+    return (pcbTable.Primeiro == pcbTable.Ultimo);
 }
 
-
-void Insere(TipoItem x, PC_TABLE *pcTable) {
-    if (pcTable->Ultimo > MAXTAM) printf("Lista esta cheia\n");
+void Insere(Processo processo) {
+    if (pcbTable.Ultimo > MAXTAM) printf("Lista esta cheia\n");
     else {
-        pcTable->vetor[pcTable->Ultimo - 1] = x;
-        pcTable->Ultimo++;
+        pcbTable.vetor[pcbTable.Ultimo - 1] = processo;
+        pcbTable.Ultimo++;
     }
 }
 
-
-void Retira(int indice, PC_TABLE *pcTable, TipoItem *Item) {
+void Retira(int indice, Processo *processo) {
     int Aux;
 
-    if (Vazia(*pcTable) || indice >= pcTable->Ultimo) {
+    if (Vazia() || indice >= pcbTable.Ultimo) {
         printf(" Erro   Posicao nao existe\n");
         return;
     }
-    *Item = pcTable->vetor[indice - 1];
-    pcTable->Ultimo--;
-    for (Aux = indice; Aux < pcTable->Ultimo; Aux++)
-        pcTable->vetor[Aux - 1] = pcTable->vetor[Aux];
+    *processo = pcbTable.vetor[indice - 1];
+    pcbTable.Ultimo--;
+    for (Aux = indice; Aux < pcbTable.Ultimo; Aux++)
+        pcbTable.vetor[Aux - 1] = pcbTable.vetor[Aux];
 }
 
-
-void Imprime(PC_TABLE *pcTable) {
+void Imprime() {
     int Aux;
 
-    for (Aux = pcTable->Primeiro - 1; Aux <= (pcTable->Ultimo - 2); Aux++)
-        printf("%d\n", pcTable->vetor[Aux]);
+    for (Aux = pcbTable.Primeiro - 1; Aux <= (pcbTable.Ultimo - 2); Aux++)
+        printf("%d\n", pcbTable.vetor[Aux]);
 }
-*/
