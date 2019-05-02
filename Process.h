@@ -5,17 +5,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-typedef struct TipoInstrucao {
-    char instrucao[20];
-} TipoInstrucao;
+#include "ProcessManager.h"
 
-typedef struct EstadoProcesso{
-    int inteiro;
-    int contador; // Inicializar com 0
-    int tamanho;
-    TipoInstrucao programa[100]; // Armazenar as instruções com cada elemento do vetor contendo uma instrução..
-} EstadoProcesso;
-
-void executarInstrucao(EstadoProcesso *estadoProcesso, char instrucao[]);
+void executarInstrucao(Cpu *cpuLocal, Time *time);
 
 #endif //TP02SO_PROCESS_H

@@ -1,18 +1,14 @@
 #include "Process.h"
-#include "ProcessManager.h"
+#include "EstruturasCompartilhadas.h"
 
-/*void alocarPrograma(EstadoProcesso *estadoProcesso) {
-    estadoProcesso->programa = (char *) malloc(estadoProcesso->tamanho * sizeof(char));
-}*/
-
-void liberarPrograma(EstadoProcesso *estadoProcesso) {
-    free(estadoProcesso->programa);
-}
-
-void executarInstrucao(EstadoProcesso *estadoProcesso, char instrucao[]){
-    char ch, comando;
+void executarInstrucao(Cpu *cpuLocal, Time *time){
+    char ch, comando, instrucao[20];
     FILE *arqPrograma;
-    int n;
+    int n = 0;
+
+    strcpy(instrucao, "");
+
+    Desenfileira(&cpuLocal->programa, instrucao);
 
     char *p = instrucao;
     while (*p) { // While there are more characters to process...
@@ -32,30 +28,35 @@ void executarInstrucao(EstadoProcesso *estadoProcesso, char instrucao[]){
 
     switch (comando){
         case 'S':  /* Define o valor da variável inteira para n, onde n é um inteiro. */
-            estadoProcesso->inteiro = n;
-            estadoProcesso->contador++;
-            printf("Variavel inteira: %d\n", estadoProcesso->inteiro);
+            cpuLocal->valorInteiro = n;
+            printf("Variavel inteira: %d\n", cpuLocal->valorInteiro);
+            cpuLocal->contadorProgramaAtual++;
+            time->time++;
             break;
         case 'A': /* Adiciona n ao valor da variável inteira, onde n é um inteiro. */
-            estadoProcesso->inteiro += n;
-            estadoProcesso->contador++;
-            printf("Variavel inteira: %d\n", estadoProcesso->inteiro);
+            cpuLocal->valorInteiro += n;
+            printf("Variavel inteira: %d\n", cpuLocal->valorInteiro);
+            cpuLocal->contadorProgramaAtual++;
+            time->time++;
             break;
         case 'D': /* Subtrai n do valor da variável inteira, onde n é um inteiro.  */
-            estadoProcesso->inteiro -= n;
-            estadoProcesso->contador++;
-            printf("Variavel inteira: %d\n", estadoProcesso->inteiro);
+            cpuLocal->valorInteiro -= n;
+            printf("Variavel inteira: %d\n", cpuLocal->valorInteiro);
+            cpuLocal->contadorProgramaAtual++;
+            time->time++;
             break;
         case 'B': /* Bloqueia esse processo simulado.   */
-            estadoProcesso->contador++;
+            cpuLocal->contadorProgramaAtual++;
+            time->time++;
             break;
         case 'E': /* Termina esse processo simulado.    */
-            estadoProcesso->contador++;
+            cpuLocal->contadorProgramaAtual++;
+            time->time++;
             break;
         case 'F': /* Cria um novo processo simulado.    */
-            estadoProcesso->contador++;
+            time->time++;
             break;
-        case 'R': /* Substitui o programa do processo simulado pelo programa no arquivo nome_do_arquivo.   */
+        case 'R': /* Substitui o instrucoes do processo simulado pelo instrucoes no arquivo nome_do_arquivo.   */
             arqPrograma = fopen("ArquivoPrograma.txt", "r");
 
             if (arqPrograma == NULL) {
@@ -70,7 +71,8 @@ void executarInstrucao(EstadoProcesso *estadoProcesso, char instrucao[]){
 
             fclose(arqPrograma);
 
-            estadoProcesso->contador++;
+            time->time++;
+
             break;
         default:
             printf("Comando não suportado!\n");

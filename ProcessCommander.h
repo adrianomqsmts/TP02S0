@@ -8,14 +8,19 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#include "Process.h"
+#include "EstruturasCompartilhadas.h"
 
+#define MAXTAM 100
 #define BUFFER 256
 
-typedef struct TipoPrograma {
-    TipoInstrucao vetor[100];
-} TipoPrograma;
-
 int runProcessCommander();
+void alocarPrograma(Programa *programa);
+void liberarPrograma(Programa *programa);
+void alocarEstadoPrograma(EstadoProcesso *estadoProcesso);
+void liberarEstadoPrograma(EstadoProcesso *estadoProcesso);
+void FFVazia(Programa *programa);
+int EhVazia(Programa *programa);
+void Enfileira(Programa *programa, char instrucao[]);
+void Desenfileira(Programa *programa, char instrucao[20]);
 
 #endif //TP02SO_PROCESSCOMMANDER_H
