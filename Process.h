@@ -7,6 +7,6 @@
 
 #include "ProcessManager.h"
 
-void executarInstrucao(Cpu *cpuLocal, Time *time);
+void executarInstrucao(Cpu *cpu, Time *time);
 
 #endif //TP02SO_PROCESS_H

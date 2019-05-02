@@ -1,14 +1,14 @@
 #include "Process.h"
 #include "EstruturasCompartilhadas.h"
 
-void executarInstrucao(Cpu *cpuLocal, Time *time){
+void executarInstrucao(Cpu *cpu, Time *time){
     char ch, comando, instrucao[20];
     FILE *arqPrograma;
     int n = 0;
 
     strcpy(instrucao, "");
 
-    Desenfileira(&cpuLocal->programa, instrucao);
+    Desenfileira(&cpu->programa, instrucao);
 
     char *p = instrucao;
     while (*p) { // While there are more characters to process...
@@ -28,29 +28,29 @@ void executarInstrucao(Cpu *cpuLocal, Time *time){
 
     switch (comando){
         case 'S':  /* Define o valor da variável inteira para n, onde n é um inteiro. */
-            cpuLocal->valorInteiro = n;
-            printf("Variavel inteira: %d\n", cpuLocal->valorInteiro);
-            cpuLocal->contadorProgramaAtual++;
+            cpu->valorInteiro = n;
+            printf("Variavel inteira: %d\n", cpu->valorInteiro);
+            cpu->contadorProgramaAtual++;
             time->time++;
             break;
         case 'A': /* Adiciona n ao valor da variável inteira, onde n é um inteiro. */
-            cpuLocal->valorInteiro += n;
-            printf("Variavel inteira: %d\n", cpuLocal->valorInteiro);
-            cpuLocal->contadorProgramaAtual++;
+            cpu->valorInteiro += n;
+            printf("Variavel inteira: %d\n", cpu->valorInteiro);
+            cpu->contadorProgramaAtual++;
             time->time++;
             break;
         case 'D': /* Subtrai n do valor da variável inteira, onde n é um inteiro.  */
-            cpuLocal->valorInteiro -= n;
-            printf("Variavel inteira: %d\n", cpuLocal->valorInteiro);
-            cpuLocal->contadorProgramaAtual++;
+            cpu->valorInteiro -= n;
+            printf("Variavel inteira: %d\n", cpu->valorInteiro);
+            cpu->contadorProgramaAtual++;
             time->time++;
             break;
         case 'B': /* Bloqueia esse processo simulado.   */
-            cpuLocal->contadorProgramaAtual++;
+            cpu->contadorProgramaAtual++;
             time->time++;
             break;
         case 'E': /* Termina esse processo simulado.    */
-            cpuLocal->contadorProgramaAtual++;
+            cpu->contadorProgramaAtual++;
             time->time++;
             break;
         case 'F': /* Cria um novo processo simulado.    */

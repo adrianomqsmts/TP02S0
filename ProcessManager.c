@@ -7,6 +7,7 @@ void inicializarEstruturas(RunningState *runningState, ReadyState *readyState, B
     FFVaziaReady(readyState);
     FFVaziaBlocked(blockedState);
     FLVaziaPcbTable(pcbTable);
+    FFVazia(&cpu->programa);
     time->time = 0;
 }
 
@@ -14,10 +15,9 @@ Processo criarPrimeiroSimulado(Programa *programa, int qtdeInstrucoes) {
     Processo processo;
     processo.pid = 0;
     processo.pid_pai = getpid();
-    strcpy(processo.estado, "PRONTO");
-    processo.prioridade = 3;
+    processo.prioridade = 3; // Vamos usar 1 (baixa), 2 (media) e 3 (alta)
     processo.tempoCPU = 0;
-    processo.timeInicio = 0;
+    processo.timeInicio = 0; // Perguntar daniel
     processo.estadoProcesso.inteiro = 0;
     processo.estadoProcesso.contador = 0;
     processo.estadoProcesso.tamanho = qtdeInstrucoes;
@@ -25,12 +25,11 @@ Processo criarPrimeiroSimulado(Programa *programa, int qtdeInstrucoes) {
     for (int k = 0; k < qtdeInstrucoes; k++) {
         strcpy(processo.estadoProcesso.programa[k].instrucao, programa->instrucoes[k].instrucao);
     }
+    strcpy(processo.estado, "PRONTO");
     return processo;
 }
 
 void colocarProcessoCPU(Cpu *cpu, PcbTable *pcbTable, int qtdeInstrucoes) {
-
-    FFVazia(&cpu->programa);
 
     cpu->programa.tamanho = qtdeInstrucoes;
 
@@ -43,7 +42,7 @@ void colocarProcessoCPU(Cpu *cpu, PcbTable *pcbTable, int qtdeInstrucoes) {
     cpu->fatiaTempoUsada = 0;
     cpu->valorInteiro = pcbTable->vetor[pcbTable->Ultimo - 2].estadoProcesso.inteiro;
 
-    strcpy(pcbTable->vetor[pcbTable->Ultimo - 2].estado, "EXECUTANDO");
+    strcpy(pcbTable->vetor[pcbTable->Ultimo - 2].estado, "EXECUTANDO"); // Mudar para funcao runCPU
 }
 
 void ImprimirCPU(Cpu *cpu) {
@@ -68,7 +67,7 @@ void runCPU(Cpu *cpu, Time *time, PcbTable *pcbTable) {
     /* Atualizando processo simulado */
     pcbTable->vetor[pcbTable->Ultimo - 2].estadoProcesso.inteiro = cpu->valorInteiro;
     pcbTable->vetor[pcbTable->Ultimo - 2].estadoProcesso.contador = cpu->contadorProgramaAtual;
-    pcbTable->vetor[pcbTable->Ultimo - 2].tempoCPU = time->time;
+    pcbTable->vetor[pcbTable->Ultimo - 2].tempoCPU = time->time; // ta certo?
 }
 
 // Implementação Fila Arranjo
