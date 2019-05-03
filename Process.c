@@ -1,7 +1,7 @@
 #include "Process.h"
 #include "EstruturasCompartilhadas.h"
 
-void executarInstrucao(Cpu *cpu, Time *time){
+void executarInstrucao(Cpu *cpu, Time *time, RunningState *runningState, PcbTable *pcbTable, BlockedState *blockedState, ReadyState *readyState){
     char ch, comando, instrucao[20];
     FILE *arqPrograma;
     int n = 0;
@@ -46,6 +46,8 @@ void executarInstrucao(Cpu *cpu, Time *time){
             time->time++;
             break;
         case 'B': /* Bloqueia esse processo simulado.   */
+            strcpy(pcbTable->vetor[runningState->iPcbTable].estado, "BLOQUEADO");
+            EnfileiraBlocked(blockedState, pcbTable->vetor[runningState->iPcbTable]);
             cpu->contadorProgramaAtual++;
             time->time++;
             break;

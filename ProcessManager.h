@@ -57,9 +57,9 @@ typedef struct RunningState {
 void inicializarEstruturas(RunningState *runningState, ReadyState *readyState, BlockedState *blockedState,
                            PcbTable *pcbTable, Cpu *cpu, Time *time);
 Processo criarPrimeiroSimulado(Programa *programa, int qtdeInstrucoes);
-void colocarProcessoCPU(Cpu *cpu, PcbTable *pcbTable, int qtdeInstrucoes);
+void colocarProcessoCPU(Cpu *cpu, PcbTable *pcbTable, RunningState *runningState,ReadyState *readyState, int qtdeInstrucoes);
 void ImprimirCPU(Cpu *cpu);
-void runCPU(Cpu *cpu, Time *time, PcbTable *pcbTable);
+void runCPU(Cpu *cpu, Time *time, PcbTable *pcbTable, RunningState *runningState, BlockedState *blockedState, ReadyState *readyState, int qtdeInstrucoes);
 void FFVaziaReady(ReadyState *readyState);
 void FFVaziaBlocked(BlockedState *blockedState);
 int VaziaReady(ReadyState *readyState);

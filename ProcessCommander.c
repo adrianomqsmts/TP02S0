@@ -104,11 +104,11 @@ int runProcessCommander() {
 
         Processo processo = criarPrimeiroSimulado(&programa, qtdeInstrucoes);
 
+        EnfileiraReady(&readyState, processo);
+
         InserePcbTable(&pcbTable, processo);
 
         ImprimePcbTable(&pcbTable);
-
-        colocarProcessoCPU(&cpu, &pcbTable, qtdeInstrucoes);
 
         ImprimirCPU(&cpu);
 
@@ -126,7 +126,7 @@ int runProcessCommander() {
             //printf("\n%c\n", str_recebida[j]);
             switch (str_recebida[j]) {
                 case 'Q': // Fim de uma unidade de tempo. Executa próxima instrução.
-                    runCPU(&cpu, &time, &pcbTable);
+                    runCPU(&cpu, &time, &pcbTable, &runningState, &blockedState, &readyState, qtdeInstrucoes);
                     ImprimePcbTable(&pcbTable);
                     break;
                 case 'U': // Desbloqueia o primeiro processo simulado na fila bloqueada.

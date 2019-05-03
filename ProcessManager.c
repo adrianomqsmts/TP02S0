@@ -3,7 +3,7 @@
 
 void inicializarEstruturas(RunningState *runningState, ReadyState *readyState, BlockedState *blockedState,
                            PcbTable *pcbTable, Cpu *cpu, Time *time) {
-    runningState->iPcbTable = -1;
+    runningState->iPcbTable = 0;
     FFVaziaReady(readyState);
     FFVaziaBlocked(blockedState);
     FLVaziaPcbTable(pcbTable);
@@ -29,20 +29,23 @@ Processo criarPrimeiroSimulado(Programa *programa, int qtdeInstrucoes) {
     return processo;
 }
 
-void colocarProcessoCPU(Cpu *cpu, PcbTable *pcbTable, int qtdeInstrucoes) {
+void colocarProcessoCPU(Cpu *cpu, PcbTable *pcbTable, RunningState *runningState, ReadyState *readyState,
+                        int qtdeInstrucoes) {
 
-    cpu->programa.tamanho = qtdeInstrucoes;
+    Processo processo;
+
+    DesenfileiraReady(readyState, &processo);
+
+    cpu->programa.tamanho = processo.estadoProcesso.tamanho;
 
     for (int i = 0; i < cpu->programa.tamanho; i++) {
-        Enfileira(&cpu->programa, pcbTable->vetor[pcbTable->Ultimo - 2].estadoProcesso.programa[i].instrucao);
+        Enfileira(&cpu->programa, processo.estadoProcesso.programa[i].instrucao);
     }
 
-    cpu->contadorProgramaAtual = pcbTable->vetor[pcbTable->Ultimo - 2].estadoProcesso.contador;
+    cpu->contadorProgramaAtual = processo.estadoProcesso.contador;
     cpu->fatiaTempo = 10;
     cpu->fatiaTempoUsada = 0;
-    cpu->valorInteiro = pcbTable->vetor[pcbTable->Ultimo - 2].estadoProcesso.inteiro;
-
-    strcpy(pcbTable->vetor[pcbTable->Ultimo - 2].estado, "EXECUTANDO"); // Mudar para funcao runCPU
+    cpu->valorInteiro = processo.estadoProcesso.inteiro;
 }
 
 void ImprimirCPU(Cpu *cpu) {
@@ -60,14 +63,20 @@ void ImprimirCPU(Cpu *cpu) {
     printf("\n\n");
 }
 
-void runCPU(Cpu *cpu, Time *time, PcbTable *pcbTable) {
+void runCPU(Cpu *cpu, Time *time, PcbTable *pcbTable, RunningState *runningState, BlockedState *blockedState,
+            ReadyState *readyState, int qtdeInstrucoes) {
 
-    executarInstrucao(cpu, time);
+    colocarProcessoCPU(cpu, pcbTable, runningState, readyState, qtdeInstrucoes);
 
+    strcpy(pcbTable->vetor[runningState->iPcbTable].estado, "EM EXECUCAO");
+
+    executarInstrucao(cpu, time, runningState, pcbTable, blockedState, readyState);
+
+    // Arrumar isso
     /* Atualizando processo simulado */
-    pcbTable->vetor[pcbTable->Ultimo - 2].estadoProcesso.inteiro = cpu->valorInteiro;
-    pcbTable->vetor[pcbTable->Ultimo - 2].estadoProcesso.contador = cpu->contadorProgramaAtual;
-    pcbTable->vetor[pcbTable->Ultimo - 2].tempoCPU = time->time; // ta certo?
+    pcbTable->vetor[runningState->iPcbTable].estadoProcesso.inteiro = cpu->valorInteiro;
+    pcbTable->vetor[runningState->iPcbTable].estadoProcesso.contador = cpu->contadorProgramaAtual;
+    pcbTable->vetor[runningState->iPcbTable].tempoCPU = time->time; // ta certo?
 }
 
 // Implementação Fila Arranjo
