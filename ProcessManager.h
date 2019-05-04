@@ -21,8 +21,8 @@ typedef struct Cpu { // Rever os atributos
     Programa programa;
     int contadorProgramaAtual;
     int valorInteiro;
-    float fatiaTempo;
-    float fatiaTempoUsada;
+    int fatiaTempo;
+    int fatiaTempoUsada;
 } Cpu;
 
 typedef struct Processo{ // Atributos na estrutura errada?
@@ -30,8 +30,8 @@ typedef struct Processo{ // Atributos na estrutura errada?
     pid_t pid_pai;
     int prioridade;
     char estado[15];
-    float timeInicio;
-    float tempoCPU;
+    int timeInicio;
+    int tempoCPU;
     EstadoProcesso estadoProcesso;
 } Processo;
 
@@ -56,18 +56,18 @@ typedef struct RunningState {
 
 void inicializarEstruturas(RunningState *runningState, ReadyState *readyState, BlockedState *blockedState,
                            PcbTable *pcbTable, Cpu *cpu, Time *time);
-Processo criarPrimeiroSimulado(Programa *programa, int qtdeInstrucoes);
-void colocarProcessoCPU(Cpu *cpu, PcbTable *pcbTable, RunningState *runningState,ReadyState *readyState, int qtdeInstrucoes);
+Processo criarProcessoSimulado(Programa *programa, Time *timee, int qtdeInstrucoes, int pid, int pidPai);
+Processo colocarProcessoCPU(Cpu *cpu, PcbTable *pcbTable, RunningState *runningState,ReadyState *readyState, int qtdeInstrucoes);
 void ImprimirCPU(Cpu *cpu);
-void runCPU(Cpu *cpu, Time *time, PcbTable *pcbTable, RunningState *runningState, BlockedState *blockedState, ReadyState *readyState, int qtdeInstrucoes);
+void runCPU(Cpu *cpu, Time *time, PcbTable *pcbTable, RunningState *runningState, BlockedState *blockedState, ReadyState *readyState, int qtdeInstrucoes, Processo *processo);
 void FFVaziaReady(ReadyState *readyState);
 void FFVaziaBlocked(BlockedState *blockedState);
 int VaziaReady(ReadyState *readyState);
 int VaziaBlocked(BlockedState *blockedState);
-void EnfileiraReady(ReadyState *readyState, Processo processo);
-void EnfileiraBlocked(BlockedState *blockedState, Processo processo);
+void EnfileiraReady(ReadyState *readyState, Processo *processo);
+void EnfileiraBlocked(BlockedState *blockedState, Processo *processo);
 void DesenfileiraReady(ReadyState *readyState, Processo *processo);
-void DesenfileiraBlocked(BlockedState *blockedState, Processo *processo);
+int DesenfileiraBlocked(BlockedState *blockedState, Processo *processo);
 void ImprimeReady(ReadyState *readyState);
 void ImprimeBlocked(BlockedState *blockedState);
 void FLVaziaPcbTable(PcbTable *pcbTable);

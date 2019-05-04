@@ -20,7 +20,7 @@ void alocarEstadoPrograma(EstadoProcesso *estadoProcesso);
 void liberarEstadoPrograma(EstadoProcesso *estadoProcesso);
 void FFVazia(Programa *programa);
 int EhVazia(Programa *programa);
-void Enfileira(Programa *programa, char instrucao[]);
-void Desenfileira(Programa *programa, char instrucao[20]);
+void EnfileiraPrograma(Programa *programa, char *instrucao);
+void DesenfileiraPrograma(Programa *programa, char *instrucao);
 
 #endif //TP02SO_PROCESSCOMMANDER_H

@@ -66,6 +66,10 @@ int runProcessCommander() {
         Cpu cpu;
         Time time;
 
+        Processo processoDesbloqueado;
+        int desenfileirou;
+        int pidProximoSimulado = 0;
+
         /* Criando Pipe. */
         if (pipe(fd_s) < 0) {
             perror("pipe");
@@ -96,23 +100,19 @@ int runProcessCommander() {
             printf("Erro, nao foi possivel abrir o arquivo ArquivoProgramaIni.txt\n");
         } else {
             while ((fgets(instrucao, sizeof(instrucao), arqProgramaIni)) != NULL) {
-                Enfileira(&programa, instrucao);
+                EnfileiraPrograma(&programa, instrucao);
             }
         }
 
         fclose(arqProgramaIni);
 
-        Processo processo = criarPrimeiroSimulado(&programa, qtdeInstrucoes);
+        Processo processo = criarProcessoSimulado(&programa, &time, qtdeInstrucoes, pidProximoSimulado, getpid());
 
-        EnfileiraReady(&readyState, processo);
+        EnfileiraReady(&readyState, &processo);
+
+        ImprimeReady(&readyState);
 
         InserePcbTable(&pcbTable, processo);
-
-        ImprimePcbTable(&pcbTable);
-
-        ImprimirCPU(&cpu);
-
-        ImprimePcbTable(&pcbTable);
 
         /* No filho, vamos ler. Então vamos fechar a entrada de ESCRITA do pipe. */
         close(fd[1]);
@@ -122,17 +122,22 @@ int runProcessCommander() {
 
         printf("String LIDA pelo MANAGER de PID %i recebida pelo COMMANDER: '%s'\n\n", getpid(), str_recebida);
 
+        processo = colocarProcessoCPU(&cpu, &pcbTable, &runningState, &readyState, qtdeInstrucoes);
+
         for (int j = 0; j < strlen(str_recebida); j++) {
             //printf("\n%c\n", str_recebida[j]);
             switch (str_recebida[j]) {
                 case 'Q': // Fim de uma unidade de tempo. Executa próxima instrução.
-                    runCPU(&cpu, &time, &pcbTable, &runningState, &blockedState, &readyState, qtdeInstrucoes);
+                    runCPU(&cpu, &time, &pcbTable, &runningState, &blockedState, &readyState, qtdeInstrucoes, &processo);
                     ImprimePcbTable(&pcbTable);
+                    ImprimirCPU(&cpu);
                     break;
                 case 'U': // Desbloqueia o primeiro processo simulado na fila bloqueada.
-
+                    desenfileirou = DesenfileiraBlocked(&blockedState, &processoDesbloqueado);
+                    if(desenfileirou)
+                        EnfileiraReady(&readyState, &processoDesbloqueado);
                     break;
-                case 'P': // Imprime o estado atual do sistema.
+                case 'P': // Imprime o estado atual do sistema. Dispara um novo processo reporter.
 
                     break;
                 case 'T': // Imprime o tempo médio do ciclo e finaliza o sistema.
@@ -167,26 +172,26 @@ void liberarEstadoPrograma(EstadoProcesso *estadoProcesso) {
 }*/
 
 void FFVazia(Programa *programa) {
-    programa->Frente = 1;
+    programa->Frente = 0;
     programa->Tras = programa->Frente;
 }
 
 int EhVazia(Programa *programa) { return (programa->Frente == programa->Tras); }
 
-void Enfileira(Programa *programa, char instrucao[]) {
+void EnfileiraPrograma(Programa *programa, char *instrucao) {
     if (programa->Tras % MAXTAM + 1 == programa->Frente)
         printf("Erro fila esta cheia\n");
     else {
-        strcpy(programa->instrucoes[programa->Tras - 1].instrucao, instrucao);
+        strcpy(programa->instrucoes[programa->Tras].instrucao, instrucao);
         programa->Tras = programa->Tras % MAXTAM + 1;
     }
 }
 
-void Desenfileira(Programa *programa, char instrucao[20]) {
+void DesenfileiraPrograma(Programa *programa, char *instrucao) {
     if (EhVazia(programa))
         printf("Erro fila esta vazia\n");
     else {
-        strcpy(instrucao, programa->instrucoes[programa->Frente - 1].instrucao);
+        strcpy(instrucao, programa->instrucoes[programa->Frente].instrucao);
         programa->Frente = programa->Frente % MAXTAM + 1;
     }
 }
