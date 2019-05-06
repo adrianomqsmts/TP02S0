@@ -15,14 +15,17 @@ void inicializarEstruturas(RunningState *runningState, ReadyState *readyState, B
     time->time = 0;
 }
 
-Processo criarProcessoSimulado(Programa *programa, Time *timee, int qtdeInstrucoes, int pid, int pidPai) {
+Processo criarProcessoSimulado(Programa *programa, Time *timee, PcbTable *pcbTable, int qtdeInstrucoes, int pid, int pidPai) {
     Processo processo;
 
     srand(time(NULL));
 
     processo.pid = pid;
     processo.pid_pai = pidPai;
-    processo.prioridade = rand() % 3;
+    if(VaziaPcbTable(pcbTable)) // Se eh o primeiro processo criado pelo manager então recebe prioridade máxima.
+        processo.prioridade = 0;
+    else
+        processo.prioridade = rand() % 3;
     processo.tempoCPU = 0;
     processo.timeInicio = timee->time; // Perguntar daniel
     processo.estadoProcesso.inteiro = 0;

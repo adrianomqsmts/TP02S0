@@ -56,7 +56,7 @@ typedef struct RunningState {
 
 void inicializarEstruturas(RunningState *runningState, ReadyState *readyState, BlockedState *blockedState,
                            PcbTable *pcbTable, Cpu *cpu, Time *time);
-Processo criarProcessoSimulado(Programa *programa, Time *timee, int qtdeInstrucoes, int pid, int pidPai);
+Processo criarProcessoSimulado(Programa *programa, Time *timee, PcbTable *pcbTable, int qtdeInstrucoes, int pid, int pidPai);
 Processo colocarProcessoCPU(Cpu *cpu, PcbTable *pcbTable, RunningState *runningState,ReadyState *readyState, int qtdeInstrucoes);
 void ImprimirCPU(Cpu *cpu);
 void runCPU(Cpu *cpu, Time *time, PcbTable *pcbTable, RunningState *runningState, BlockedState *blockedState, ReadyState *readyState, int qtdeInstrucoes, Processo *processo);
