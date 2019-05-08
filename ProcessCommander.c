@@ -11,6 +11,7 @@ int runProcessCommander() {
     FILE *arqCommander, *arqProgramaIni;
 
     int qtdeInstrucoes = 0;
+    int qtdeComandos = 0;
 
     Programa programa;
     FFVazia(&programa);
@@ -106,7 +107,7 @@ int runProcessCommander() {
 
         fclose(arqProgramaIni);
 
-        Processo processo = criarProcessoSimulado(&programa, &time, qtdeInstrucoes, pidProximoSimulado, getpid());
+        Processo processo = criarPrimeiroSimulado(&programa, &time, qtdeInstrucoes, getpid());
 
         EnfileiraReady(&readyState, &processo);
 
@@ -122,13 +123,13 @@ int runProcessCommander() {
 
         printf("String LIDA pelo MANAGER de PID %i recebida pelo COMMANDER: '%s'\n\n", getpid(), str_recebida);
 
-        processo = colocarProcessoCPU(&cpu, &pcbTable, &runningState, &readyState, qtdeInstrucoes);
+        processo = colocarProcessoCPU(&cpu, &readyState);
 
         for (int j = 0; j < strlen(str_recebida); j++) {
             //printf("\n%c\n", str_recebida[j]);
             switch (str_recebida[j]) {
                 case 'Q': // Fim de uma unidade de tempo. Executa próxima instrução.
-                    runCPU(&cpu, &time, &pcbTable, &runningState, &blockedState, &readyState, qtdeInstrucoes, &processo);
+                    runCPU(&cpu, &time, &pcbTable, &runningState, &blockedState, &readyState, &processo);
                     ImprimePcbTable(&pcbTable);
                     ImprimirCPU(&cpu);
                     break;
@@ -149,7 +150,8 @@ int runProcessCommander() {
             }
         }
 
-        exit(0);
+
+        //exit(0);
 
     }
 

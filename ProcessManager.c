@@ -15,19 +15,16 @@ void inicializarEstruturas(RunningState *runningState, ReadyState *readyState, B
     time->time = 0;
 }
 
-Processo criarProcessoSimulado(Programa *programa, Time *timee, PcbTable *pcbTable, int qtdeInstrucoes, int pid, int pidPai) {
+Processo criarPrimeiroSimulado(Programa *programa, Time *timee, int qtdeInstrucoes, int pidPai) {
     Processo processo;
 
     srand(time(NULL));
 
-    processo.pid = pid;
+    processo.pid = 0;
     processo.pid_pai = pidPai;
-    if(VaziaPcbTable(pcbTable)) // Se eh o primeiro processo criado pelo manager então recebe prioridade máxima.
-        processo.prioridade = 0;
-    else
-        processo.prioridade = rand() % 3;
+    processo.prioridade = 0;
     processo.tempoCPU = 0;
-    processo.timeInicio = timee->time; // Perguntar daniel
+    processo.timeInicio = timee->time;
     processo.estadoProcesso.inteiro = 0;
     processo.estadoProcesso.contador = 0;
     processo.estadoProcesso.tamanho = qtdeInstrucoes;
@@ -39,8 +36,28 @@ Processo criarProcessoSimulado(Programa *programa, Time *timee, PcbTable *pcbTab
     return processo;
 }
 
-Processo colocarProcessoCPU(Cpu *cpu, PcbTable *pcbTable, RunningState *runningState, ReadyState *readyState,
-                        int qtdeInstrucoes) {
+Processo criarProcessoSimulado(Time *timee, Processo *processoPai) {
+    Processo processo;
+
+    srand(time(NULL));
+
+    processo.pid = processoPai->pid + 1; // Ta errado. Arrumar isso.
+    processo.pid_pai = processoPai->pid;
+    processo.prioridade = processoPai->prioridade;
+    processo.tempoCPU = 0;
+    processo.timeInicio = timee->time;
+    processo.estadoProcesso.inteiro = processoPai->estadoProcesso.inteiro;
+    processo.estadoProcesso.contador = processoPai->estadoProcesso.contador + 1;
+    processo.estadoProcesso.tamanho = processoPai->estadoProcesso.tamanho;
+    //alocarEstadoPrograma(&processo.estadoProcesso);
+    for (int i = 0; i < processoPai->estadoProcesso.tamanho; i++) {
+        strcpy(processo.estadoProcesso.programa[i].instrucao, processoPai->estadoProcesso.programa[i].instrucao);
+    }
+    strcpy(processo.estado, "PRONTO");
+    return processo;
+}
+
+Processo colocarProcessoCPU(Cpu *cpu, ReadyState *readyState) {
 
     Processo processo;
 
@@ -76,7 +93,7 @@ void ImprimirCPU(Cpu *cpu) {
 }
 
 void runCPU(Cpu *cpu, Time *time, PcbTable *pcbTable, RunningState *runningState, BlockedState *blockedState,
-            ReadyState *readyState, int qtdeInstrucoes, Processo *processo) {
+            ReadyState *readyState, Processo *processo) {
 
     strcpy(processo->estado, "EM EXECUCAO");
 
@@ -99,7 +116,12 @@ void runCPU(Cpu *cpu, Time *time, PcbTable *pcbTable, RunningState *runningState
     processo->estadoProcesso.inteiro = cpu->valorInteiro;
     processo->estadoProcesso.contador = cpu->contadorProgramaAtual;
     processo->tempoCPU = cpu->fatiaTempoUsada; // Ta certo?
+    for (int i = 0; i < processo->estadoProcesso.tamanho; i++) { // Da errado quando o programa da CPU é maior que o programa do processo.
+        strcpy(processo->estadoProcesso.programa[i].instrucao, cpu->programa.instrucoes[i].instrucao);
+    }
     pcbTable->vetor[runningState->iPcbTable] = *processo;
+
+    // Usar troca de contexto quando processo terminar execução.
 
     // Isso eh realmente aqui?
     if(cpu->fatiaTempoUsada >= cpu->fatiaTempo) // Fatia Tempo Usada pode ultrapassar Fatia Tempo?

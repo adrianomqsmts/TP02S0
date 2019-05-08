@@ -1,10 +1,14 @@
 #include "Process.h"
 #include "EstruturasCompartilhadas.h"
 
-void executarInstrucao(Cpu *cpu, Time *time, RunningState *runningState, PcbTable *pcbTable, BlockedState *blockedState, ReadyState *readyState, Processo *processo){
+void executarInstrucao(Cpu *cpu, Time *time, RunningState *runningState, PcbTable *pcbTable, BlockedState *blockedState,
+                       ReadyState *readyState, Processo *processo) {
     char ch, comando, instrucao[20];
     FILE *arqPrograma;
     int n = 0;
+    Processo novoProcesso;
+    Programa novoPrograma;
+    FFVazia(&novoPrograma);
 
     strcpy(instrucao, "");
 
@@ -12,7 +16,7 @@ void executarInstrucao(Cpu *cpu, Time *time, RunningState *runningState, PcbTabl
 
     char *p = instrucao;
     while (*p) { // While there are more characters to process...
-        if ( isdigit(*p) || ( (*p=='-'||*p=='+') && isdigit(*(p+1)) )) {
+        if (isdigit(*p) || ((*p == '-' || *p == '+') && isdigit(*(p + 1)))) {
             // Found a number
             n = strtol(p, &p, 10); // Read number
             printf("Inteiro extraido: %d\n", n); // and print it.
@@ -26,7 +30,7 @@ void executarInstrucao(Cpu *cpu, Time *time, RunningState *runningState, PcbTabl
 
     printf("Comando: %c\n", comando);
 
-    switch (comando){
+    switch (comando) {
         case 'S':  /* Define o valor da variável inteira para n, onde n é um inteiro. */
             cpu->valorInteiro = n;
             printf("Variavel inteira: %d\n", cpu->valorInteiro);
@@ -47,31 +51,37 @@ void executarInstrucao(Cpu *cpu, Time *time, RunningState *runningState, PcbTabl
             break;
         case 'B': /* Bloqueia esse processo simulado. */
             EnfileiraBlocked(blockedState, processo);
-            cpu->contadorProgramaAtual++;
+            colocarProcessoCPU(cpu, readyState);
+            //cpu->contadorProgramaAtual++; // Remover???
             time->time++;
             break;
         case 'E': /* Termina esse processo simulado. */
-            cpu->contadorProgramaAtual++;
+            RetiraPcbTable(pcbTable, runningState->iPcbTable, processo); // Precisa desalocar o programa.
+            colocarProcessoCPU(cpu, readyState);
             time->time++;
             break;
         case 'F': /* Cria um novo processo simulado. */
+            novoProcesso = criarProcessoSimulado(time, processo);
+            EnfileiraReady(readyState, &novoProcesso);
+            InserePcbTable(pcbTable, novoProcesso);
+            cpu->contadorProgramaAtual++; // Necessário para atualizar o contador do processo pai para a instrução logo após a instrução F.
             time->time++;
             break;
-        case 'R': /* Substitui o instrucoes do processo simulado pelo instrucoes no arquivo nome_do_arquivo. */
+        case 'R': /* Substitui o programa do processo simulado pelo programa no arquivo nome_do_arquivo e define o contador de programa para a primeira instrução desse novo programa. */
             arqPrograma = fopen("ArquivoPrograma.txt", "r");
 
             if (arqPrograma == NULL) {
                 printf("Erro, nao foi possivel abrir o arquivo ArquivoPrograma.txt\n");
             } else {
-                while ((ch = fgetc(arqPrograma)) != EOF) {
-                    if (ch != ' ') {
-
-                    }
+                while ((fgets(instrucao, sizeof(instrucao), arqPrograma)) != NULL) {
+                    EnfileiraPrograma(&novoPrograma, instrucao);
                 }
             }
 
             fclose(arqPrograma);
 
+            cpu->contadorProgramaAtual = 0;
+            cpu->valorInteiro = 0; // Indefinido?????
             time->time++;
 
             break;
