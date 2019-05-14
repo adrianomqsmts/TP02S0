@@ -280,3 +280,33 @@ void ImprimePcbTable(PcbTable *pcbTable) {
     }
 
 }
+
+void imprimeReporter(Cpu *cpu, Time *time, PcbTable *pcbTable, RunningState *runningState, BlockedState *blockedState,
+            ReadyState *readyState, Processo *processo){
+    Processo processoSimulado;
+
+    if(runningState->iPcbTable != -1)
+        processoSimulado = pcbTable->vetor[runningState->iPcbTable];
+    printf("**************************************************\n");
+    printf("The current system state is as follows: \n");
+    printf("**************************************************\n");
+    printf("CURRENT TIME: %d\n", time->time);
+    printf("\nCPU PROCESS:\n");
+    printf("PID: %d\tPPID: %d\tprioridade: %d\tValue: %d\tStart Time: %d\tCPU Time: %d\n", processoSimulado.pid,
+            processoSimulado.pid_pai, processoSimulado.prioridade, cpu->valorInteiro, processoSimulado.timeInicio, processoSimulado.tempoCPU+cpu->fatiaTempoUsada);
+    printf("\nRUNNING PROCESS IN PCBTABLE:\n");
+    if(runningState->iPcbTable != -1)
+        printf("PID: %d\tPPID: %d\tprioridade: %d\tValue: %d\tStart Time: %d\tCPU Time: %d\n", processoSimulado.pid,
+                processoSimulado.pid_pai, processoSimulado.prioridade, cpu->valorInteiro, processoSimulado.timeInicio, processoSimulado.tempoCPU);
+    else printf("CPU Ociosa\n");
+    printf("\nBLOCKED PROCESSES:\n");
+    printf("Queue of blocked processes:\n");
+    if(VaziaBlocked(&blockedState) == 1){
+        printf("FILA VAZIA!\n");
+    } else ImprimeBlocked(&blockedState);
+    printf("\nPROCESSES READY TO EXECUTE:\n");
+    printf("Queue of processes ready:\n");
+    if(VaziaReady(&readyState) == 1){
+        printf("FILA VAZIA!\n");
+    } else ImprimeReady(&readyState);
+}
