@@ -77,5 +77,7 @@ int VaziaPcbTable(PcbTable *pcbTable);
 void InserePcbTable(PcbTable *pcbTable, Processo processo);
 void RetiraPcbTable(PcbTable *pcbTable, int indice, Processo *processo);
 void ImprimePcbTable(PcbTable *pcbTable);
+void imprimeReporter(Cpu *cpu, Time *time, PcbTable *pcbTable, RunningState *runningState, BlockedState *blockedState,
+            ReadyState *readyState, Processo *processo);
 
 #endif //TP02SO_PROCESSMANAGER_H
