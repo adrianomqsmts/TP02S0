@@ -1,27 +1,28 @@
 #include "ProcessCommander.h"
 #include "ProcessManager.h"
+#include "ProcessReporter.h"
 
-int runProcessCommander() {
+void runProcessCommander() {
 
-    int fd[2], fd_s[2]; /* File descriptors pro Pipe */
-    pid_t pid_m; /* Variável para armazenar o pid do fork do Processo Manager*/
+    int fd1[2]; /* File descriptors pro Pipe */
+    pid_t pid_m, pid_r; /* Variável para armazenar o pid do fork do Processo Manager*/
 
     char ch, str[2], str_enviada[BUFFER], instrucao[20];
     char str_recebida[BUFFER];
     FILE *arqCommander, *arqProgramaIni;
 
     int qtdeInstrucoes = 0;
-    int qtdeComandos = 0;
+    int flag;
 
     Programa programa;
-    FFVazia(&programa);
+    FLVaziaPrograma(&programa);
 
     strcpy(str_enviada, "");
 
     /* Criando Pipe. */
-    if (pipe(fd) < 0) {
+    if (pipe(fd1) < 0) {
         perror("pipe");
-        return -1;
+        return;
     }
 
     /* Criando o processo filho. */
@@ -49,12 +50,12 @@ int runProcessCommander() {
         fclose(arqCommander);
 
         /* No pai, vamos ESCREVER, então vamos fechar a LEITURA do Pipe neste lado. */
-        close(fd[0]);
+        close(fd1[0]);
 
         printf("String ENVIADA pelo COMMANDER de PID %i para MANAGER: '%s'\n", getpid(), str_enviada);
 
         /* Escrevendo a string no pipe. */
-        write(fd[1], str_enviada, sizeof(str_enviada) + 1);
+        write(fd1[1], str_enviada, sizeof(str_enviada) + 1);
         exit(0);
     }
         /* Processo Filho (MANAGER). */
@@ -67,15 +68,7 @@ int runProcessCommander() {
         Cpu cpu;
         Time time;
 
-        Processo processoDesbloqueado;
-        int desenfileirou;
-        int pidProximoSimulado = 0;
-
-        /* Criando Pipe. */
-        if (pipe(fd_s) < 0) {
-            perror("pipe");
-            return -1;
-        }
+        int indiceProcesso;
 
         inicializarEstruturas(&runningState, &readyState, &blockedState, &pcbTable, &cpu, &time);
 
@@ -84,8 +77,8 @@ int runProcessCommander() {
         if (arqProgramaIni == NULL) {
             printf("Erro, nao foi possivel abrir o arquivo ArquivoProgramaIni.txt\n");
         } else {
-            while( (fgets(instrucao, sizeof(instrucao), arqProgramaIni)) != NULL )
-                    qtdeInstrucoes++;
+            while ((fgets(instrucao, sizeof(instrucao), arqProgramaIni)) != NULL)
+                qtdeInstrucoes++;
         }
 
         printf("Quantidade de Instruções: %d\n", qtdeInstrucoes);
@@ -93,7 +86,6 @@ int runProcessCommander() {
         fclose(arqProgramaIni);
 
         programa.tamanho = qtdeInstrucoes;
-        //alocarPrograma(&programa);
 
         arqProgramaIni = fopen("ArquivoProgramaIni.txt", "r");
 
@@ -101,7 +93,7 @@ int runProcessCommander() {
             printf("Erro, nao foi possivel abrir o arquivo ArquivoProgramaIni.txt\n");
         } else {
             while ((fgets(instrucao, sizeof(instrucao), arqProgramaIni)) != NULL) {
-                EnfileiraPrograma(&programa, instrucao);
+                InserePrograma(&programa, instrucao);
             }
         }
 
@@ -109,37 +101,71 @@ int runProcessCommander() {
 
         Processo processo = criarPrimeiroSimulado(&programa, &time, qtdeInstrucoes, getpid());
 
-        EnfileiraReady(&readyState, &processo);
+        Enfileira(&readyState.filaPrioridade0, InserePcbTable(&pcbTable, processo));
 
-        ImprimeReady(&readyState);
-
-        InserePcbTable(&pcbTable, processo);
+        /*ImprimeFila(&readyState.filaPrioridade0, &pcbTable);
+        ImprimeFila(&readyState.filaPrioridade1, &pcbTable);
+        ImprimeFila(&readyState.filaPrioridade2, &pcbTable);
+        ImprimeFila(&readyState.filaPrioridade3, &pcbTable);*/
 
         /* No filho, vamos ler. Então vamos fechar a entrada de ESCRITA do pipe. */
-        close(fd[1]);
+        close(fd1[1]);
 
         /* Lendo o que foi escrito no pipe, e armazenando isso em 'str_recebida'. */
-        read(fd[0], str_recebida, sizeof(str_recebida));
+        read(fd1[0], str_recebida, sizeof(str_recebida));
 
         printf("String LIDA pelo MANAGER de PID %i recebida pelo COMMANDER: '%s'\n\n", getpid(), str_recebida);
 
-        processo = colocarProcessoCPU(&cpu, &readyState);
+        colocarProcessoCPU(&cpu, &readyState, &runningState, &pcbTable);
 
         for (int j = 0; j < strlen(str_recebida); j++) {
             //printf("\n%c\n", str_recebida[j]);
             switch (str_recebida[j]) {
                 case 'Q': // Fim de uma unidade de tempo. Executa próxima instrução.
-                    runCPU(&cpu, &time, &pcbTable, &runningState, &blockedState, &readyState, &processo);
-                    ImprimePcbTable(&pcbTable);
-                    ImprimirCPU(&cpu);
+                    flag = runCPU(&cpu, &time, &pcbTable, &runningState, &blockedState, &readyState);
+                    if (flag == 0) {
+                        break;
+                    } else {
+                        //ImprimePcbTable(&pcbTable);
+                        //ImprimirCPU(&cpu);
+                    }
                     break;
                 case 'U': // Desbloqueia o primeiro processo simulado na fila bloqueada.
-                    desenfileirou = DesenfileiraBlocked(&blockedState, &processoDesbloqueado);
-                    if(desenfileirou)
-                        EnfileiraReady(&readyState, &processoDesbloqueado);
+                    //ImprimeFila(&blockedState.filaBlockedState, &pcbTable);
+                    indiceProcesso = Desenfileira(&blockedState.filaBlockedState);
+                    if (indiceProcesso != -1) {
+                        processo = pcbTable.vetor[indiceProcesso];
+                        strcpy(processo.estado, "PRONTO");
+                        pcbTable.vetor[indiceProcesso] = processo;
+                        printf("Processo de PID %i DESBLOQUEADO!\n", processo.pid);
+                        switch (processo.prioridade) {
+                            case 0:
+                                Enfileira(&readyState.filaPrioridade0, indiceProcesso);
+                                break;
+                            case 1:
+                                Enfileira(&readyState.filaPrioridade1, indiceProcesso);
+                                break;
+                            case 2:
+                                Enfileira(&readyState.filaPrioridade2, indiceProcesso);
+                                break;
+                            case 3:
+                                Enfileira(&readyState.filaPrioridade3, indiceProcesso);
+                                break;
+                        }
+                    }
                     break;
                 case 'P': // Imprime o estado atual do sistema. Dispara um novo processo reporter.
-
+                    /* Criando o processo Reporter. */
+                    if ((pid_r = fork()) < 0) {
+                        perror("fork");
+                        exit(1);
+                        /* Executando Reporter */
+                    } else if (pid_r == 0) {
+                        imprimeReporter(&time, &pcbTable, &runningState, &blockedState, &readyState);
+                        exit(0);
+                    } else {
+                        while (wait(NULL) != -1);
+                    }
                     break;
                 case 'T': // Imprime o tempo médio do ciclo e finaliza o sistema.
 
@@ -150,50 +176,52 @@ int runProcessCommander() {
             }
         }
 
-
         //exit(0);
 
     }
 
 }
 
-/*void alocarPrograma(Programa *programa) {
-    programa->instrucoes = (Instrucao *) malloc(programa->tamanho * sizeof(Instrucao));
+void FLVaziaPrograma(Programa *programa) {
+    programa->Primeiro = 0;
+    programa->Ultimo = programa->Primeiro;
 }
 
-void liberarPrograma(Programa *programa) {
-    free(programa->instrucoes);
+
+int VaziaPrograma(Programa *programa) {
+    return (programa->Primeiro == programa->Ultimo);
 }
 
-void alocarEstadoPrograma(EstadoProcesso *estadoProcesso) {
-    estadoProcesso->instrucoes = (Instrucao *) malloc(estadoProcesso->tamanho * sizeof(Instrucao));
-}
-
-void liberarEstadoPrograma(EstadoProcesso *estadoProcesso) {
-    free(estadoProcesso->instrucoes);
-}*/
-
-void FFVazia(Programa *programa) {
-    programa->Frente = 0;
-    programa->Tras = programa->Frente;
-}
-
-int EhVazia(Programa *programa) { return (programa->Frente == programa->Tras); }
-
-void EnfileiraPrograma(Programa *programa, char *instrucao) {
-    if (programa->Tras % MAXTAM + 1 == programa->Frente)
-        printf("Erro fila esta cheia\n");
-    else {
-        strcpy(programa->instrucoes[programa->Tras].instrucao, instrucao);
-        programa->Tras = programa->Tras % MAXTAM + 1;
+int InserePrograma(Programa *programa, char *instrucao) {
+    if (programa->Ultimo > MAXTAM) {
+        printf("Lista esta cheia\n");
+        return 0;
+    } else {
+        strcpy(programa->instrucoes[programa->Ultimo].instrucao, instrucao);
+        programa->Ultimo++;
+        return 1;
     }
 }
 
-void DesenfileiraPrograma(Programa *programa, char *instrucao) {
-    if (EhVazia(programa))
-        printf("Erro fila esta vazia\n");
-    else {
-        strcpy(instrucao, programa->instrucoes[programa->Frente].instrucao);
-        programa->Frente = programa->Frente % MAXTAM + 1;
+int RetiraPrograma(Programa *programa, int indice, char *instrucao) {
+    int Aux;
+
+    if (VaziaPrograma(programa) || indice >= programa->Ultimo) {
+        printf("Erro Posicao nao existe\n");
+        return 0;
     }
+    strcpy(instrucao, programa->instrucoes[indice].instrucao);
+    programa->Ultimo--;
+    for (Aux = indice; Aux < programa->Ultimo; Aux++)
+        programa->instrucoes[Aux] = programa->instrucoes[Aux];
+    return 1;
+}
+
+int PegarInstrucaoPrograma(Programa *programa, int indice, char *instrucao) {
+    if (VaziaPrograma(programa) || indice >= programa->Ultimo) {
+        printf("Erro Posicao nao existe Programa\n");
+        return 0;
+    }
+    strcpy(instrucao, programa->instrucoes[indice].instrucao);
+    return 1;
 }

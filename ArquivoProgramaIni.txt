@@ -1,7 +1,9 @@
 S 1000
 A 19
-A 20
 D 53
-A 55
 F 1
+R file_a.txt
 F 1
+A 19
+D 53
+E

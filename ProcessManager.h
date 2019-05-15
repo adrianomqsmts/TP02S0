@@ -35,19 +35,26 @@ typedef struct Processo{ // Atributos na estrutura errada?
     EstadoProcesso estadoProcesso;
 } Processo;
 
+typedef struct Fila {
+    char nome[30];
+    int vetor[MAXTAM];
+    int Frente, Tras;
+} Fila;
+
 typedef struct PcbTable {
     Processo vetor[MAXTAM];
     int Primeiro, Ultimo;
 } PcbTable;
 
 typedef struct ReadyState {
-    Processo vetor[MAXTAM];
-    int Frente, Tras;
+    Fila filaPrioridade0;
+    Fila filaPrioridade1;
+    Fila filaPrioridade2;
+    Fila filaPrioridade3;
 } ReadyState;
 
 typedef struct BlockedState {
-    Processo vetor[MAXTAM];
-    int Frente, Tras;
+    Fila filaBlockedState;
 } BlockedState;
 
 typedef struct RunningState {
@@ -58,26 +65,25 @@ void inicializarEstruturas(RunningState *runningState, ReadyState *readyState, B
                            PcbTable *pcbTable, Cpu *cpu, Time *time);
 Processo criarPrimeiroSimulado(Programa *programa, Time *timee, int qtdeInstrucoes, int pidPai);
 Processo criarProcessoSimulado(Time *timee, Processo *processoPai);
-Processo colocarProcessoCPU(Cpu *cpu, ReadyState *readyState);
+int colocarProcessoCPU(Cpu *cpu, ReadyState *readyState, RunningState *runningState, PcbTable *pcbTable);
 void ImprimirCPU(Cpu *cpu);
-void runCPU(Cpu *cpu, Time *time, PcbTable *pcbTable, RunningState *runningState, BlockedState *blockedState,
-            ReadyState *readyState, Processo *processo);
-void FFVaziaReady(ReadyState *readyState);
-void FFVaziaBlocked(BlockedState *blockedState);
-int VaziaReady(ReadyState *readyState);
-int VaziaBlocked(BlockedState *blockedState);
-void EnfileiraReady(ReadyState *readyState, Processo *processo);
-void EnfileiraBlocked(BlockedState *blockedState, Processo *processo);
-void DesenfileiraReady(ReadyState *readyState, Processo *processo);
-int DesenfileiraBlocked(BlockedState *blockedState, Processo *processo);
-void ImprimeReady(ReadyState *readyState);
-void ImprimeBlocked(BlockedState *blockedState);
+int runCPU(Cpu *cpu, Time *time, PcbTable *pcbTable, RunningState *runningState, BlockedState *blockedState,
+           ReadyState *readyState);
+void zerarCPU(Cpu *cpu);
+
+void FFVazia(Fila *fila);
+int EhVazia(Fila *fila);
+void Enfileira(Fila *fila, int indiceProcesso);
+int Desenfileira(Fila *fila);
+void ImprimeFila(Fila *fila, PcbTable *pcbTable);
+void AtualizaFila(Fila *fila, int indiceProcesso);
+void RemoverProcessoFila(Fila *fila, int indiceProccesso);
+
 void FLVaziaPcbTable(PcbTable *pcbTable);
 int VaziaPcbTable(PcbTable *pcbTable);
-void InserePcbTable(PcbTable *pcbTable, Processo processo);
-void RetiraPcbTable(PcbTable *pcbTable, int indice, Processo *processo);
+int InserePcbTable(PcbTable *pcbTable, Processo processo);
+int RetiraPcbTable(PcbTable *pcbTable, int indice, Processo *processo);
 void ImprimePcbTable(PcbTable *pcbTable);
-void imprimeReporter(Cpu *cpu, Time *time, PcbTable *pcbTable, RunningState *runningState, BlockedState *blockedState,
-            ReadyState *readyState, Processo *processo);
+
 
 #endif //TP02SO_PROCESSMANAGER_H

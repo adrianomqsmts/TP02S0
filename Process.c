@@ -1,18 +1,41 @@
 #include "Process.h"
 #include "EstruturasCompartilhadas.h"
 
-void executarInstrucao(Cpu *cpu, Time *time, RunningState *runningState, PcbTable *pcbTable, BlockedState *blockedState,
-                       ReadyState *readyState, Processo *processo) {
-    char ch, comando, instrucao[20];
+int executarInstrucao(Cpu *cpu, Time *time, RunningState *runningState, PcbTable *pcbTable, BlockedState *blockedState,
+                      ReadyState *readyState, Processo *processo) {
+    char comando, instrucao[20], nomeArquivo[20];
     FILE *arqPrograma;
-    int n = 0;
-    Processo novoProcesso;
+    int n = 0, qtdeInstrucoes = 0, j = 0, flag;
+    Processo novoProcesso, processoRetirado;
     Programa novoPrograma;
-    FFVazia(&novoPrograma);
+    FLVaziaPrograma(&novoPrograma);
 
     strcpy(instrucao, "");
+    strcpy(nomeArquivo, "");
 
-    DesenfileiraPrograma(&cpu->programa, instrucao);
+    flag = PegarInstrucaoPrograma(&cpu->programa, cpu->contadorProgramaAtual, instrucao);
+
+    if (flag == 0) {
+        printf("Acabaram as instrucoes do processo de PID %i.\n", processo->pid);
+        printf("Encerrando processo e colocando outro na CPU...\n");
+        RetiraPcbTable(pcbTable, runningState->iPcbTable, &processoRetirado);
+        switch (processoRetirado.prioridade) {
+            case 0:
+                AtualizaFila(&readyState->filaPrioridade0, runningState->iPcbTable);
+                break;
+            case 1:
+                AtualizaFila(&readyState->filaPrioridade1, runningState->iPcbTable);
+                break;
+            case 2:
+                AtualizaFila(&readyState->filaPrioridade2, runningState->iPcbTable);
+                break;
+            case 3:
+                AtualizaFila(&readyState->filaPrioridade3, runningState->iPcbTable);
+                break;
+        }
+        time->time++;
+        return 0;
+    }
 
     char *p = instrucao;
     while (*p) { // While there are more characters to process...
@@ -36,57 +59,124 @@ void executarInstrucao(Cpu *cpu, Time *time, RunningState *runningState, PcbTabl
             printf("Variavel inteira: %d\n", cpu->valorInteiro);
             cpu->contadorProgramaAtual++;
             time->time++;
-            break;
+            return 1;
         case 'A': /* Adiciona n ao valor da variável inteira, onde n é um inteiro. */
             cpu->valorInteiro += n;
             printf("Variavel inteira: %d\n", cpu->valorInteiro);
             cpu->contadorProgramaAtual++;
             time->time++;
-            break;
+            return 1;
         case 'D': /* Subtrai n do valor da variável inteira, onde n é um inteiro. */
             cpu->valorInteiro -= n;
             printf("Variavel inteira: %d\n", cpu->valorInteiro);
             cpu->contadorProgramaAtual++;
             time->time++;
-            break;
+            return 1;
         case 'B': /* Bloqueia esse processo simulado. */
-            EnfileiraBlocked(blockedState, processo);
-            colocarProcessoCPU(cpu, readyState);
-            //cpu->contadorProgramaAtual++; // Remover???
+            strcpy(pcbTable->vetor[runningState->iPcbTable].estado, "BLOQUEADO");
+            pcbTable->vetor[runningState->iPcbTable].prioridade -= 1;
+            ImprimePcbTable(pcbTable);
+            Enfileira(&blockedState->filaBlockedState, runningState->iPcbTable);
+            ImprimeFila(&blockedState->filaBlockedState, pcbTable);
+            switch (pcbTable->vetor[runningState->iPcbTable].prioridade) {
+                case 0:
+                    RemoverProcessoFila(&readyState->filaPrioridade0, runningState->iPcbTable);
+                    break;
+                case 1:
+                    RemoverProcessoFila(&readyState->filaPrioridade1, runningState->iPcbTable);
+                    break;
+                case 2:
+                    RemoverProcessoFila(&readyState->filaPrioridade2, runningState->iPcbTable);
+                    break;
+                case 3:
+                    RemoverProcessoFila(&readyState->filaPrioridade3, runningState->iPcbTable);
+                    break;
+            }
+            cpu->contadorProgramaAtual++;
             time->time++;
-            break;
+            return 0;
         case 'E': /* Termina esse processo simulado. */
-            RetiraPcbTable(pcbTable, runningState->iPcbTable, processo); // Precisa desalocar o programa.
-            colocarProcessoCPU(cpu, readyState);
+            printf("Posicao do processo PID %i: %d\n", processo->pid, runningState->iPcbTable);
+            RetiraPcbTable(pcbTable, runningState->iPcbTable, &processoRetirado);
+            ImprimePcbTable(pcbTable);
+            switch (processoRetirado.prioridade) {
+                case 0:
+                    AtualizaFila(&readyState->filaPrioridade0, runningState->iPcbTable);
+                    break;
+                case 1:
+                    AtualizaFila(&readyState->filaPrioridade1, runningState->iPcbTable);
+                    break;
+                case 2:
+                    AtualizaFila(&readyState->filaPrioridade2, runningState->iPcbTable);
+                    break;
+                case 3:
+                    AtualizaFila(&readyState->filaPrioridade3, runningState->iPcbTable);
+                    break;
+            }
             time->time++;
-            break;
+            return 0;
         case 'F': /* Cria um novo processo simulado. */
+            processo->estadoProcesso.contador = cpu->contadorProgramaAtual;
             novoProcesso = criarProcessoSimulado(time, processo);
-            EnfileiraReady(readyState, &novoProcesso);
-            InserePcbTable(pcbTable, novoProcesso);
-            cpu->contadorProgramaAtual++; // Necessário para atualizar o contador do processo pai para a instrução logo após a instrução F.
+            switch (novoProcesso.prioridade) {
+                case 0:
+                    Enfileira(&readyState->filaPrioridade0, InserePcbTable(pcbTable, novoProcesso));
+                    break;
+                case 1:
+                    Enfileira(&readyState->filaPrioridade1, InserePcbTable(pcbTable, novoProcesso));
+                    break;
+                case 2:
+                    Enfileira(&readyState->filaPrioridade2, InserePcbTable(pcbTable, novoProcesso));
+                    break;
+                case 3:
+                    Enfileira(&readyState->filaPrioridade3, InserePcbTable(pcbTable, novoProcesso));
+                    break;
+            }
+            ImprimeFila(&readyState->filaPrioridade0, pcbTable);
+            ImprimeFila(&readyState->filaPrioridade1, pcbTable);
+            ImprimeFila(&readyState->filaPrioridade2, pcbTable);
+            ImprimeFila(&readyState->filaPrioridade3, pcbTable);
+            cpu->contadorProgramaAtual += n +
+                                          1; // Necessário para atualizar o contador do processo pai para a instrução logo após a instrução F.
             time->time++;
-            break;
+            ImprimePcbTable(pcbTable);
+            return 1;
         case 'R': /* Substitui o programa do processo simulado pelo programa no arquivo nome_do_arquivo e define o contador de programa para a primeira instrução desse novo programa. */
-            arqPrograma = fopen("ArquivoPrograma.txt", "r");
-
-            if (arqPrograma == NULL) {
-                printf("Erro, nao foi possivel abrir o arquivo ArquivoPrograma.txt\n");
-            } else {
-                while ((fgets(instrucao, sizeof(instrucao), arqPrograma)) != NULL) {
-                    EnfileiraPrograma(&novoPrograma, instrucao);
+            for (int i = 2; i < strlen(instrucao); i++) {
+                if (instrucao[i] != 10) {
+                    nomeArquivo[j] = instrucao[i];
+                    j++;
+                } else {
+                    nomeArquivo[j - 1] = '\0';
+                    j++;
                 }
+
             }
 
+            printf("Nome Arquivo: %s\n", nomeArquivo);
+
+            arqPrograma = fopen(nomeArquivo, "r");
+
+            if (arqPrograma == NULL) {
+                printf("Erro, nao foi possivel abrir o arquivo %s\n", nomeArquivo);
+            } else {
+                while ((fgets(instrucao, sizeof(instrucao), arqPrograma)) != NULL) {
+                    InserePrograma(&novoPrograma, instrucao);
+                    qtdeInstrucoes++;
+                }
+                novoPrograma.tamanho = qtdeInstrucoes;
+                cpu->programa = novoPrograma;
+                cpu->contadorProgramaAtual = 0;
+                cpu->valorInteiro = 0;
+                time->time++;
+
+            }
             fclose(arqPrograma);
 
-            cpu->contadorProgramaAtual = 0;
-            cpu->valorInteiro = 0; // Indefinido?????
-            time->time++;
-
-            break;
+            return 1;
         default:
             printf("Comando não suportado!\n");
+            return 2;
     }
 
 }

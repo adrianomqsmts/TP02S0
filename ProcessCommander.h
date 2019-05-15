@@ -13,14 +13,11 @@
 #define MAXTAM 100
 #define BUFFER 256
 
-int runProcessCommander();
-void alocarPrograma(Programa *programa);
-void liberarPrograma(Programa *programa);
-void alocarEstadoPrograma(EstadoProcesso *estadoProcesso);
-void liberarEstadoPrograma(EstadoProcesso *estadoProcesso);
-void FFVazia(Programa *programa);
-int EhVazia(Programa *programa);
-void EnfileiraPrograma(Programa *programa, char *instrucao);
-void DesenfileiraPrograma(Programa *programa, char *instrucao);
+void runProcessCommander();
+void FLVaziaPrograma(Programa *programa);
+int VaziaPrograma(Programa *programa);
+int InserePrograma(Programa *programa, char *instrucao);
+int RetiraPrograma(Programa *programa, int indice, char *instrucao);
+int PegarInstrucaoPrograma(Programa *programa, int indice, char *instrucao);
 
 #endif //TP02SO_PROCESSCOMMANDER_H
