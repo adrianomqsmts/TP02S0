@@ -4,7 +4,8 @@
 
 void runProcessCommander() {
 
-    int fd1[2], opc = 0; /* File descriptors pro Pipe */
+    int fd1[2]; /* File descriptors*/ 
+    int opc = 0; /* Opção de entrada (por arquivo ou através de comandos)*/
     pid_t pid_m, pid_r; /* Variável para armazenar o pid do fork do Processo Manager*/
 
     char ch, str[2], str_enviada[BUFFER], instrucao[20];
@@ -192,7 +193,7 @@ void runProcessCommander() {
                     break;
             }
         }
-        printf("%s",str_enviada);
+        
         //exit(0);
 
     }
