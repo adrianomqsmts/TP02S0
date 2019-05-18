@@ -3,6 +3,6 @@
 #include "ProcessReporter.h"
 #include "Process.h"
 
-void main() {
+int main() {
     runProcessCommander();
 }

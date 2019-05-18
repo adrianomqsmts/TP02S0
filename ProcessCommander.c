@@ -67,6 +67,7 @@ void runProcessCommander() {
         PcbTable pcbTable;
         Cpu cpu;
         Time time;
+        Tickets ticketsSorteados;
 
         int indiceProcesso;
 
@@ -99,7 +100,7 @@ void runProcessCommander() {
 
         fclose(arqProgramaIni);
 
-        Processo processo = criarPrimeiroSimulado(&programa, &time, qtdeInstrucoes, getpid());
+        Processo processo = criarPrimeiroSimulado(&programa, &time, qtdeInstrucoes, getpid(), &ticketsSorteados);
 
         Enfileira(&readyState.filaPrioridade0, InserePcbTable(&pcbTable, processo));
 
@@ -116,22 +117,18 @@ void runProcessCommander() {
 
         printf("String LIDA pelo MANAGER de PID %i recebida pelo COMMANDER: '%s'\n\n", getpid(), str_recebida);
 
-        colocarProcessoCPU(&cpu, &readyState, &runningState, &pcbTable);
+        escalonador(&cpu, &readyState, &runningState, &pcbTable, &ticketsSorteados);
 
         for (int j = 0; j < strlen(str_recebida); j++) {
-            //printf("\n%c\n", str_recebida[j]);
+            printf("\nComando: %c\n", str_recebida[j]);
             switch (str_recebida[j]) {
                 case 'Q': // Fim de uma unidade de tempo. Executa próxima instrução.
-                    flag = runCPU(&cpu, &time, &pcbTable, &runningState, &blockedState, &readyState);
+                    flag = runCPU(&cpu, &time, &pcbTable, &runningState, &blockedState, &readyState, &ticketsSorteados);
                     if (flag == 0) {
                         break;
-                    } else {
-                        //ImprimePcbTable(&pcbTable);
-                        //ImprimirCPU(&cpu);
                     }
                     break;
                 case 'U': // Desbloqueia o primeiro processo simulado na fila bloqueada.
-                    //ImprimeFila(&blockedState.filaBlockedState, &pcbTable);
                     indiceProcesso = Desenfileira(&blockedState.filaBlockedState);
                     if (indiceProcesso != -1) {
                         processo = pcbTable.vetor[indiceProcesso];

@@ -2,7 +2,7 @@
 #include "EstruturasCompartilhadas.h"
 
 int executarInstrucao(Cpu *cpu, Time *time, RunningState *runningState, PcbTable *pcbTable, BlockedState *blockedState,
-                      ReadyState *readyState, Processo *processo) {
+                      ReadyState *readyState, Processo *processo, Tickets *ticketsSorteados) {
     char comando, instrucao[20], nomeArquivo[20];
     FILE *arqPrograma;
     int n = 0, qtdeInstrucoes = 0, j = 0, flag;
@@ -15,6 +15,7 @@ int executarInstrucao(Cpu *cpu, Time *time, RunningState *runningState, PcbTable
 
     flag = PegarInstrucaoPrograma(&cpu->programa, cpu->contadorProgramaAtual, instrucao);
 
+    // Acho que não precisa ja que é obrigatorio a ultima instrução ser a E
     if (flag == 0) {
         printf("Acabaram as instrucoes do processo de PID %i.\n", processo->pid);
         printf("Encerrando processo e colocando outro na CPU...\n");
@@ -78,25 +79,11 @@ int executarInstrucao(Cpu *cpu, Time *time, RunningState *runningState, PcbTable
             ImprimePcbTable(pcbTable);
             Enfileira(&blockedState->filaBlockedState, runningState->iPcbTable);
             ImprimeFila(&blockedState->filaBlockedState, pcbTable);
-            switch (pcbTable->vetor[runningState->iPcbTable].prioridade) {
-                case 0:
-                    RemoverProcessoFila(&readyState->filaPrioridade0, runningState->iPcbTable);
-                    break;
-                case 1:
-                    RemoverProcessoFila(&readyState->filaPrioridade1, runningState->iPcbTable);
-                    break;
-                case 2:
-                    RemoverProcessoFila(&readyState->filaPrioridade2, runningState->iPcbTable);
-                    break;
-                case 3:
-                    RemoverProcessoFila(&readyState->filaPrioridade3, runningState->iPcbTable);
-                    break;
-            }
             cpu->contadorProgramaAtual++;
             time->time++;
             return 0;
         case 'E': /* Termina esse processo simulado. */
-            printf("Posicao do processo PID %i: %d\n", processo->pid, runningState->iPcbTable);
+            printf("Posicao do processo de PID %i terminado: %d\n", processo->pid, runningState->iPcbTable);
             RetiraPcbTable(pcbTable, runningState->iPcbTable, &processoRetirado);
             ImprimePcbTable(pcbTable);
             switch (processoRetirado.prioridade) {
@@ -117,7 +104,7 @@ int executarInstrucao(Cpu *cpu, Time *time, RunningState *runningState, PcbTable
             return 0;
         case 'F': /* Cria um novo processo simulado. */
             processo->estadoProcesso.contador = cpu->contadorProgramaAtual;
-            novoProcesso = criarProcessoSimulado(time, processo);
+            novoProcesso = criarProcessoSimulado(time, processo, ticketsSorteados);
             switch (novoProcesso.prioridade) {
                 case 0:
                     Enfileira(&readyState->filaPrioridade0, InserePcbTable(pcbTable, novoProcesso));
@@ -136,12 +123,13 @@ int executarInstrucao(Cpu *cpu, Time *time, RunningState *runningState, PcbTable
             ImprimeFila(&readyState->filaPrioridade1, pcbTable);
             ImprimeFila(&readyState->filaPrioridade2, pcbTable);
             ImprimeFila(&readyState->filaPrioridade3, pcbTable);
-            cpu->contadorProgramaAtual += n +
-                                          1; // Necessário para atualizar o contador do processo pai para a instrução logo após a instrução F.
+            cpu->contadorProgramaAtual += n + 1; /* Necessário para atualizar o contador do processo pai para a
+                                                  * instrução logo após a instrução F. */
             time->time++;
             ImprimePcbTable(pcbTable);
             return 1;
-        case 'R': /* Substitui o programa do processo simulado pelo programa no arquivo nome_do_arquivo e define o contador de programa para a primeira instrução desse novo programa. */
+        case 'R': /* Substitui o programa do processo simulado pelo programa no arquivo nome_do_arquivo e define o
+                   * contador de programa para a primeira instrução desse novo programa. */
             for (int i = 2; i < strlen(instrucao); i++) {
                 if (instrucao[i] != 10) {
                     nomeArquivo[j] = instrucao[i];
