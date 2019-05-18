@@ -4,7 +4,7 @@
 
 void runProcessCommander() {
 
-    int fd1[2]; /* File descriptors pro Pipe */
+    int fd1[2], opc = 0; /* File descriptors pro Pipe */
     pid_t pid_m, pid_r; /* Variável para armazenar o pid do fork do Processo Manager*/
 
     char ch, str[2], str_enviada[BUFFER], instrucao[20];
@@ -19,6 +19,15 @@ void runProcessCommander() {
 
     strcpy(str_enviada, "");
 
+    do {
+        printf("\nESCOLHA UMA OPÇÃO:\n\n1 - Entrada por Arquivo .TXT\n2 - Entrada Manual\n");
+        printf("\n");
+        scanf("%d",&opc);
+        printf("\n");
+        if((opc != 1) && (opc != 2))
+            printf("\nOpcão inválida!\n");
+    } while((opc != 1) && (opc != 2));
+
     /* Criando Pipe. */
     if (pipe(fd1) < 0) {
         perror("pipe");
@@ -32,6 +41,8 @@ void runProcessCommander() {
     }
     /* Processo Pai. */
     if (pid_m > 0) {
+
+        if(opc == 1){
 
         arqCommander = fopen("ProcessCommander.txt", "r");
 
@@ -48,6 +59,15 @@ void runProcessCommander() {
         }
 
         fclose(arqCommander);
+        } else {
+            sleep(2); // Pausa de 2 segundos para que não haja conflito retornos de saídas simultâneos
+            printf("\n\n\nDigite a sequência de comandos (ex: QQUQPT, QUUQP, etc):\n\n");
+            printf("Q: Executa instrução da lista.\n");
+            printf("U: Desbloqueia processo.\n");
+            printf("P: Estado atual do sistema.\n");
+            printf("T: Tempo médio do ciclo.\n\n");
+            scanf("%s",str_enviada);
+        }
 
         /* No pai, vamos ESCREVER, então vamos fechar a LEITURA do Pipe neste lado. */
         close(fd1[0]);
@@ -172,7 +192,7 @@ void runProcessCommander() {
                     break;
             }
         }
-
+        printf("%s",str_enviada);
         //exit(0);
 
     }
