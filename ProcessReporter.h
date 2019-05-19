@@ -4,7 +4,7 @@
 #include "ProcessManager.h"
 
 void ImprimeFilaReporter(Fila *fila, PcbTable *pcbTable);
-void imprimeReporter(Time *time, PcbTable *pcbTable, RunningState *runningState, BlockedState *blockedState,
+void ImprimeReporter(Time *time, PcbTable *pcbTable, RunningState *runningState, BlockedState *blockedState,
                      ReadyState *readyState);
 
 #endif //TP02SO_PROCESSREPORTER_H

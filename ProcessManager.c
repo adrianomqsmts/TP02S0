@@ -2,9 +2,8 @@
 #include "Process.h"
 
 int pidNovoProcesso = 0;
-int tipoEscalonamento = 1; /* Se != 0 política do grupo, se == 0 política do professor. */
 
-void inicializarEstruturas(RunningState *runningState, ReadyState *readyState, BlockedState *blockedState,
+void InicializarEstruturas(RunningState *runningState, ReadyState *readyState, BlockedState *blockedState,
                            PcbTable *pcbTable, Cpu *cpu, Time *time) {
     runningState->iPcbTable = -1;
 
@@ -27,12 +26,12 @@ void inicializarEstruturas(RunningState *runningState, ReadyState *readyState, B
     cpu->fatiaTempo = 0;
     cpu->contadorProgramaAtual = 0;
     cpu->valorInteiro = 0;
+    cpu->quantum = 0;
 
     time->time = 0;
 }
 
-Processo
-criarPrimeiroSimulado(Programa *programa, Time *timee, int qtdeInstrucoes, int pidPai, Tickets *ticketsSorteados) {
+Processo CriarPrimeiroSimulado(Programa *programa, Time *timee, int qtdeInstrucoes, int pidPai, Tickets *ticketsSorteados) {
 
     srand(time(NULL));
     Processo processo;
@@ -43,16 +42,13 @@ criarPrimeiroSimulado(Programa *programa, Time *timee, int qtdeInstrucoes, int p
     processo.pid_pai = pidPai;
     processo.prioridade = 0;
 
-    while (processo.tickets.Ultimo < 5) {
+    while (processo.tickets.Ultimo < 10) {
         int ticket = rand() % 100;
         if (!TicketExiste(ticketsSorteados, ticket)) {
             InsereTickets(&processo.tickets, ticket);
             InsereTickets(ticketsSorteados, ticket);
         }
     }
-
-    //ImprimeTickets(&processo.tickets);
-    //ImprimeTickets(ticketsSorteados);
 
     processo.tempoCPU = 0;
     processo.timeInicio = timee->time;
@@ -65,7 +61,7 @@ criarPrimeiroSimulado(Programa *programa, Time *timee, int qtdeInstrucoes, int p
     return processo;
 }
 
-Processo criarProcessoSimulado(Time *timee, Processo *processoPai, Tickets *ticketsSorteados) {
+Processo CriarProcessoSimulado(Time *timee, Processo *processoPai, Tickets *ticketsSorteados) {
 
     srand(time(NULL));
     Processo processo;
@@ -76,16 +72,13 @@ Processo criarProcessoSimulado(Time *timee, Processo *processoPai, Tickets *tick
     processo.pid_pai = processoPai->pid;
     processo.prioridade = processoPai->prioridade;
 
-    while (processo.tickets.Ultimo < 5) {
+    while (processo.tickets.Ultimo < 10) {
         int ticket = rand() % 100;
         if (!TicketExiste(ticketsSorteados, ticket)) {
             InsereTickets(&processo.tickets, ticket);
             InsereTickets(ticketsSorteados, ticket);
         }
     }
-
-    //ImprimeTickets(&processo.tickets);
-    //ImprimeTickets(ticketsSorteados);
 
     processo.tempoCPU = 0;
     processo.timeInicio = timee->time;
@@ -98,7 +91,7 @@ Processo criarProcessoSimulado(Time *timee, Processo *processoPai, Tickets *tick
     return processo;
 }
 
-int escalonador(Cpu *cpu, ReadyState *readyState, RunningState *runningState, PcbTable *pcbTable,
+int Escalonador(Cpu *cpu, ReadyState *readyState, RunningState *runningState, PcbTable *pcbTable,
                 Tickets *ticketsSorteados) {
 
     Processo processo;
@@ -118,10 +111,6 @@ int escalonador(Cpu *cpu, ReadyState *readyState, RunningState *runningState, Pc
             runningState->iPcbTable = Desenfileira(&readyState->filaPrioridade3);
         } else {
             printf("Não existe processos nas filas de prioridades!\n");
-            ImprimeFila(&readyState->filaPrioridade0, pcbTable);
-            ImprimeFila(&readyState->filaPrioridade1, pcbTable);
-            ImprimeFila(&readyState->filaPrioridade2, pcbTable);
-            ImprimeFila(&readyState->filaPrioridade3, pcbTable);
             runningState->iPcbTable = -1;
             return 0;
         }
@@ -173,10 +162,6 @@ int escalonador(Cpu *cpu, ReadyState *readyState, RunningState *runningState, Pc
                 }
             } else {
                 printf("Não existe processos nas filas de prioridades!\n");
-                ImprimeFila(&readyState->filaPrioridade0, pcbTable);
-                ImprimeFila(&readyState->filaPrioridade1, pcbTable);
-                ImprimeFila(&readyState->filaPrioridade2, pcbTable);
-                ImprimeFila(&readyState->filaPrioridade3, pcbTable);
                 runningState->iPcbTable = -1;
                 return 0;
             }
@@ -189,8 +174,9 @@ int escalonador(Cpu *cpu, ReadyState *readyState, RunningState *runningState, Pc
     cpu->programa.tamanho = processo.estadoProcesso.tamanho;
     cpu->programa = processo.estadoProcesso.programa;
     cpu->contadorProgramaAtual = processo.estadoProcesso.contador;
-    cpu->fatiaTempo = 3;
+    cpu->fatiaTempo = 9;
     cpu->fatiaTempoUsada = 0;
+    cpu->quantum = 0;
     cpu->valorInteiro = processo.estadoProcesso.inteiro;
 
     return 1;
@@ -212,7 +198,20 @@ void ImprimirCPU(Cpu *cpu) {
     printf("\n\n");
 }
 
-int runCPU(Cpu *cpu, Time *time, PcbTable *pcbTable, RunningState *runningState, BlockedState *blockedState,
+float CalcularTempoCiclo(PcbTable *pcbTable) {
+    float somaTempoCPU = 0;
+    printf("Tempo CPU Processos Encerrados: %f\n", pcbTable->tempoCPUEncerrados);
+    for (int i = pcbTable->Primeiro; i <= (pcbTable->Ultimo - 1); i++) {
+        somaTempoCPU += pcbTable->vetor[i].tempoCPU;
+    }
+    printf("Tempo CPU Processos Ativos: %f\n", somaTempoCPU);
+    somaTempoCPU += pcbTable->tempoCPUEncerrados;
+    printf("Quantidade total de processos criados: %d\n", pidNovoProcesso);
+    return somaTempoCPU / (pidNovoProcesso);
+
+}
+
+int RunCPU(Cpu *cpu, Time *time, PcbTable *pcbTable, RunningState *runningState, BlockedState *blockedState,
            ReadyState *readyState, Tickets *ticketsSorteados) {
 
     int flag;
@@ -226,7 +225,7 @@ int runCPU(Cpu *cpu, Time *time, PcbTable *pcbTable, RunningState *runningState,
             return 0;
         }
     } else { /* Segunda checagem para comprovar que ainda não existe processo disponível depois do comando U. */
-        if (escalonador(cpu, readyState, runningState, pcbTable, ticketsSorteados) == 0 &&
+        if (Escalonador(cpu, readyState, runningState, pcbTable, ticketsSorteados) == 0 &&
             runningState->iPcbTable == -1)
             return 0;
         else
@@ -239,10 +238,10 @@ int runCPU(Cpu *cpu, Time *time, PcbTable *pcbTable, RunningState *runningState,
 
     printf("Executando processo de PID %i.\n", processo.pid);
 
-    flag = executarInstrucao(cpu, time, runningState, pcbTable, blockedState, readyState, &processo, ticketsSorteados);
+    flag = ExecutarInstrucao(cpu, time, runningState, pcbTable, blockedState, readyState, &processo, ticketsSorteados);
 
     if (flag == 0) {
-        if (!escalonador(cpu, readyState, runningState, pcbTable, ticketsSorteados)) {
+        if (!Escalonador(cpu, readyState, runningState, pcbTable, ticketsSorteados)) {
             return 0;
         }
     } else if (flag == 1) {
@@ -266,25 +265,26 @@ int runCPU(Cpu *cpu, Time *time, PcbTable *pcbTable, RunningState *runningState,
         /* Atualizando processo simulado */
         processo.estadoProcesso.inteiro = cpu->valorInteiro;
         processo.estadoProcesso.contador = cpu->contadorProgramaAtual;
-        processo.tempoCPU = cpu->fatiaTempoUsada; // Time ou fatia de tempo?
+        processo.tempoCPU += cpu->quantum;
         processo.estadoProcesso.programa = cpu->programa;
         processo.estadoProcesso.tamanho = cpu->programa.tamanho; // Necessário quando instrução R é executada.
+        /* Atualizando processo na tabela de processos */
         pcbTable->vetor[runningState->iPcbTable] = processo;
 
-        ImprimirCPU(cpu);
 
         if (cpu->fatiaTempoUsada >= cpu->fatiaTempo) {
-            processo.prioridade += 1;
+            printf("\nFatia de Tempo de CPU do processo de PID %i esgotada.\n", pcbTable->vetor[runningState->iPcbTable].pid);
+            if(processo.prioridade < 3)
+                processo.prioridade++;
             strcpy(processo.estado, "BLOQUEADO");
+            /* Atualizando processo na tabela de processos */
             pcbTable->vetor[runningState->iPcbTable] = processo;
-            ImprimePcbTable(pcbTable);
             Enfileira(&blockedState->filaBlockedState, runningState->iPcbTable);
-            ImprimeFila(&blockedState->filaBlockedState, pcbTable);
-            ImprimePcbTable(pcbTable);
-            escalonador(cpu, readyState, runningState, pcbTable, ticketsSorteados);
+            printf("Adicionando processo a Fila de Bloqueados!\n");
+            printf("Colocando outro processo na CPU!\n");
+            Escalonador(cpu, readyState, runningState, pcbTable, ticketsSorteados);
         }
     }
-
 
     return 1;
 
@@ -299,12 +299,21 @@ void FFVazia(Fila *fila) {
 
 int EhVazia(Fila *fila) { return (fila->Frente == fila->Tras); }
 
+int ProcessoJaInserido(Fila *fila, int indiceProcesso) {
+    for (int i = fila->Frente; i <= fila->Tras - 1; i++) {
+        if (fila->vetor[i] == indiceProcesso)
+            return 1;
+    }
+    return 0;
+}
+
 void Enfileira(Fila *fila, int indiceProcesso) {
     if ((fila->Tras + 1) % MAXTAM == fila->Frente)
         printf("Erro %s esta cheia\n", fila->nome);
     else {
+        if(ProcessoJaInserido(fila, indiceProcesso))
+            return;
         fila->vetor[fila->Tras] = indiceProcesso;
-        //printf("\nProcesso de PID %i adicionado a FILA PRONTO!\n", processo->pid);
         fila->Tras = (fila->Tras + 1) % MAXTAM;
     }
 }
@@ -329,11 +338,9 @@ void AtualizaFila(Fila *fila, int indiceProcesso) {
     }
 }
 
-void RemoverProcessoFila(Fila *fila, int indiceProccesso) {
-    printf("Frente: %d\n", fila->Frente);
-    printf("Tras: %d\n", fila->Tras);
+void RemoverProcessoFila(Fila *fila, int indiceProcesso) {
     for (int i = fila->Frente; i <= fila->Tras - 1; i++) {
-        if (fila->vetor[i] == indiceProccesso) {
+        if (fila->vetor[i] == indiceProcesso) {
             for (int j = i; i < fila->Tras - 1; i++)
                 fila->vetor[j] = fila->vetor[i + 1];
         }
@@ -365,6 +372,7 @@ void ImprimeFila(Fila *fila, PcbTable *pcbTable) {
 // Implementação Lista Arranjo
 
 void FLVaziaPcbTable(PcbTable *pcbTable) {
+    pcbTable->tempoCPUEncerrados = 0;
     pcbTable->Primeiro = 0;
     pcbTable->Ultimo = pcbTable->Primeiro;
 }

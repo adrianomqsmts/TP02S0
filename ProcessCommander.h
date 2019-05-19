@@ -5,15 +5,24 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-
-#include "EstruturasCompartilhadas.h"
 
 #define MAXTAM 100
 #define BUFFER 256
 
-void runProcessCommander();
+typedef struct Instrucao {
+    char instrucao[20];
+} Instrucao;
+
+typedef struct Programa {
+    Instrucao instrucoes[20];
+    int tamanho;
+    int Primeiro, Ultimo;
+} Programa;
+
+void RunProcessCommander();
 void FLVaziaPrograma(Programa *programa);
 int VaziaPrograma(Programa *programa);
 int InserePrograma(Programa *programa, char *instrucao);

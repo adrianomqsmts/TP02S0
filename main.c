@@ -4,5 +4,5 @@
 #include "Process.h"
 
 int main() {
-    runProcessCommander();
+    RunProcessCommander();
 }

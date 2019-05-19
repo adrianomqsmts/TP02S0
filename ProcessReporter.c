@@ -1,7 +1,7 @@
 #include "ProcessReporter.h"
 #include "ProcessManager.h"
 
-void imprimeReporter(Time *time, PcbTable *pcbTable, RunningState *runningState, BlockedState *blockedState,
+void ImprimeReporter(Time *time, PcbTable *pcbTable, RunningState *runningState, BlockedState *blockedState,
                      ReadyState *readyState) {
 
     printf("\n\n**************************************************\n");

@@ -10,19 +10,21 @@
 
 #include "ProcessCommander.h"
 
+
 #define MAXTAM 100
 #define BUFFER 256
 
 typedef struct Time {
-    int time; // Inicializar com 0
+    int time;
 } Time;
 
-typedef struct Cpu { // Rever os atributos
+typedef struct Cpu {
     Programa programa;
     int contadorProgramaAtual;
     int valorInteiro;
     int fatiaTempo;
     int fatiaTempoUsada;
+    int quantum;
 } Cpu;
 
 typedef struct Tickets {
@@ -30,7 +32,20 @@ typedef struct Tickets {
     int Primeiro, Ultimo;
 } Tickets;
 
-typedef struct Processo{ // Atributos na estrutura errada?
+typedef struct Fila {
+    char nome[30];
+    int vetor[MAXTAM];
+    int Frente, Tras;
+} Fila;
+
+typedef struct EstadoProcesso{
+    int inteiro;
+    int contador;
+    int tamanho;
+    Programa programa;
+} EstadoProcesso;
+
+typedef struct Processo{
     pid_t pid;
     pid_t pid_pai;
     int prioridade;
@@ -41,14 +56,9 @@ typedef struct Processo{ // Atributos na estrutura errada?
     EstadoProcesso estadoProcesso;
 } Processo;
 
-typedef struct Fila {
-    char nome[30];
-    int vetor[MAXTAM];
-    int Frente, Tras;
-} Fila;
-
 typedef struct PcbTable {
     Processo vetor[MAXTAM];
+    float tempoCPUEncerrados;
     int Primeiro, Ultimo;
 } PcbTable;
 
@@ -67,18 +77,19 @@ typedef struct RunningState {
     int iPcbTable;
 } RunningState;
 
+int tipoEscalonamento; /* Se != 0 política do grupo, se == 0 política do professor. */
 
-
-
-void inicializarEstruturas(RunningState *runningState, ReadyState *readyState, BlockedState *blockedState,
+void InicializarEstruturas(RunningState *runningState, ReadyState *readyState, BlockedState *blockedState,
                            PcbTable *pcbTable, Cpu *cpu, Time *time);
-Processo criarPrimeiroSimulado(Programa *programa, Time *timee, int qtdeInstrucoes, int pidPai, Tickets *ticketsSorteados);
-Processo criarProcessoSimulado(Time *timee, Processo *processoPai, Tickets *ticketsSorteados);
-int escalonador(Cpu *cpu, ReadyState *readyState, RunningState *runningState, PcbTable *pcbTable,
+Processo CriarPrimeiroSimulado(Programa *programa, Time *timee, int qtdeInstrucoes, int pidPai,
+                               Tickets *ticketsSorteados);
+Processo CriarProcessoSimulado(Time *timee, Processo *processoPai, Tickets *ticketsSorteados);
+int Escalonador(Cpu *cpu, ReadyState *readyState, RunningState *runningState, PcbTable *pcbTable,
                 Tickets *ticketsSorteados);
 void ImprimirCPU(Cpu *cpu);
-int runCPU(Cpu *cpu, Time *time, PcbTable *pcbTable, RunningState *runningState, BlockedState *blockedState,
+int RunCPU(Cpu *cpu, Time *time, PcbTable *pcbTable, RunningState *runningState, BlockedState *blockedState,
            ReadyState *readyState, Tickets *ticketsSorteados);
+float CalcularTempoCiclo(PcbTable *pcbTable);
 
 void FFVazia(Fila *fila);
 int EhVazia(Fila *fila);
@@ -86,7 +97,8 @@ void Enfileira(Fila *fila, int indiceProcesso);
 int Desenfileira(Fila *fila);
 void ImprimeFila(Fila *fila, PcbTable *pcbTable);
 void AtualizaFila(Fila *fila, int indiceProcesso);
-void RemoverProcessoFila(Fila *fila, int indiceProccesso);
+void RemoverProcessoFila(Fila *fila, int indiceProcesso);
+int ProcessoJaInserido(Fila *fila, int indiceProcesso);
 
 void FLVaziaPcbTable(PcbTable *pcbTable);
 int FEhVaziaPcbTable(PcbTable *pcbTable);
